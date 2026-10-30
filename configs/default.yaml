@@ -1,0 +1,24 @@
+planner:
+  model_id: Qwen/Qwen3.5-9B
+  load_in_4bit: true        # 9B bf16(~19GB) 는 16GB GPU 에 안 들어감 -> NF4 (~6.5GB)
+  max_new_tokens: 256
+  image_size: 384
+  device_map: cuda:0
+
+vla:
+  model:
+    model_id: Qwen/Qwen3.5-4B
+    chunk_size: 8
+    head_type: mlp           # mlp (빠른 수렴, 결정적 회귀) | flow (flow-matching)
+    head_hidden: 1024
+    head_layers: 3
+    flow_steps: 10
+    image_size: 256          # 256x256 -> 이미지당 64 토큰
+    load_in_4bit: true       # NF4 (비전 인코더 제외). bench_vla_quant.py 결과로 선정
+    load_in_8bit: false      # 비권장: 느리고(281ms) 특징 보존도 낮음
+  exec_horizon: 1            # 매 스텝 폐루프 시각 피드백 (정밀 파지/배치)
+
+pipeline:
+  keep_planner_loaded: true  # Planner(7.4GB)+VLA 4bit(3.1GB) 동시 상주 -> check_done 닫힌 루프
+  check_every: 20            # VLA 실행 중 planner 로 subtask 완료 판단 주기 (0 = 비활성)
+  max_steps_per_subtask: 120

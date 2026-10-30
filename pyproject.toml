@@ -1,0 +1,60 @@
+[project]
+name = "vla-arm"
+version = "0.1.0"
+description = "MuJoCo Franka Panda + Qwen3.5 LLM Planner + Qwen3.5 VLA"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "mujoco>=3.3",
+    "numpy>=1.26",
+    "pillow>=10.0",
+    "imageio[ffmpeg]>=2.34",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# LLM Planner / VLA 모델 (GPU)
+models = [
+    "torch>=2.7",
+    "torchvision>=0.22",
+    "transformers>=5.2",
+    "accelerate>=1.6",
+    "bitsandbytes>=0.45",
+    "safetensors>=0.5",
+    "qwen-vl-utils>=0.0.11",
+]
+# Gated DeltaNet 가속 커널 (선택, 없으면 PyTorch fallback 으로 느리게 동작)
+# flash-linear-attention 은 Triton 기반이라 nvcc 불필요.
+# causal-conv1d 는 CUDA toolkit(nvcc) 이 있어야 빌드되므로 별도 extra 로 분리
+kernels = [
+    "flash-linear-attention>=0.3",
+]
+kernels-conv = [
+    "causal-conv1d>=1.5",
+]
+# 학습 단계 (2단계)
+train = [
+    "peft>=0.15",
+    "h5py>=3.11",
+    "tensorboard>=2.17",
+]
+
+[tool.uv]
+# causal-conv1d 는 빌드 시 torch 가 필요
+no-build-isolation-package = ["causal-conv1d"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+torchvision = [{ index = "pytorch-cu128" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vla_arm"]
